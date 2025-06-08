@@ -54,16 +54,39 @@ connectedComponents graph = findComponents (IntMap.keys graph) IntSet.empty []
 dfs :: Graph -> Node -> IntSet.IntSet -> ([Node], IntSet.IntSet)
 dfs graph start visited = runDfs [start] visited []
     where
-        runDfs [] vis acc = (reverse acc, vis)
+        runDfs [] vis acc = (acc, vis)
         runDfs (n:rest) vis acc
             | IntSet.member n vis = runDfs rest vis acc
             | otherwise =
                 let neighbors = getNeighbors graph n
                     vis' = IntSet.insert n vis
-                in runDfs (neighbors ++ rest) vis' (n : acc)
+                in runDfs (neighbors ++ rest) vis' (acc ++ [n])
+
+bfs :: Graph -> Node -> Int
+bfs graph start = runBfs [(start, 0)] IntSet.empty 0
+    where
+        runBfs [] _ maxDist = maxDist
+        runBfs ((n, d):queue) visited maxDist
+            | IntSet.member n visited = runBfs queue visited maxDist
+            | otherwise =
+                let visited' = IntSet.insert n visited
+                    neighbors = getNeighbors graph n
+                    newQueue = queue ++ [(nei, d + 1) | nei <- neighbors, not (IntSet.member nei visited')]
+                    maxDist' = max maxDist d
+                in runBfs newQueue visited' maxDist'
+
+componentDiameter :: Graph -> [Node] -> Int
+componentDiameter graph [] = 0
+componentDiameter graph component = maximum (map (bfs graph) component)
+
+maxDiameter :: Graph -> Int
+maxDiameter graph =
+    let comps = connectedComponents graph
+    in maximum (map (componentDiameter graph) comps)
 
 main :: IO ()
 main = do
     graph <- loadGraph "graphs/components.txt"
     --print graph
     print (connectedComponents graph)
+    print (maxDiameter graph)

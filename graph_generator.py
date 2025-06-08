@@ -1,5 +1,4 @@
 import random
-from collections import defaultdict
 
 def gen_k_components(n, k):
     nodes = list(range(n))
@@ -33,5 +32,5 @@ def save_to_file(adj_list, filename):
             neighbors = ','.join(str(nei) for nei in sorted(adj_list[node]))
             f.write(f"{node}: {neighbors}\n")
 
-graph = gen_k_components(100000, 4)
+graph = gen_k_components(20, 3)
 save_to_file(graph, "graphs/components.txt")
