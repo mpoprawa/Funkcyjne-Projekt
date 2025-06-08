@@ -3,9 +3,10 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import qualified Data.IntSet as IntSet
+import qualified Data.IntMap as IntMap
 
 type Node = Int
-type Graph = [(Node, [Node])]
+type Graph = IntMap.IntMap [Node]
 
 parseLine :: String -> Maybe (Node, [Node])
 parseLine line =
@@ -35,15 +36,14 @@ loadGraph path = do
     file <- readFile path
     let fileLines = lines file
         parsed = mapMaybe parseLine fileLines
-    return parsed
+    return (IntMap.fromList parsed)
 
 getNeighbors :: Graph -> Node -> [Node]
-getNeighbors graph node = fromMaybe [] (lookup node graph)
+getNeighbors graph node = IntMap.findWithDefault [] node graph
 
 connectedComponents :: Graph -> [[Node]]
-connectedComponents graph = findComponents allNodes IntSet.empty []
+connectedComponents graph = findComponents (IntMap.keys graph) IntSet.empty []
     where
-        allNodes = map fst graph
         findComponents  [] _ components = components
         findComponents  (n:rest) visited components
             | IntSet.member n visited = findComponents  rest visited components
@@ -64,6 +64,6 @@ dfs graph start visited = runDfs [start] visited []
 
 main :: IO ()
 main = do
-    graph <- loadGraph "components.txt"
-    print graph
+    graph <- loadGraph "graphs/components.txt"
+    --print graph
     print (connectedComponents graph)
