@@ -4,11 +4,9 @@ import Data.List
 import Data.Maybe
 
 type Node = Int
-type Weight = Int
-type Edge = (Node, Weight)
-type Graph = [(Node, [Edge])]
+type Graph = [(Node, [Node])]
 
-parseLine :: String -> Maybe (Node, [Edge])
+parseLine :: String -> Maybe (Node, [Node])
 parseLine line =
     case break (== ':') line of
         (nodeString, ':' : rest) ->
@@ -17,29 +15,19 @@ parseLine line =
             in Just (node, edges)
         _ -> Nothing
 
-parseEdges :: String -> [Edge]
+parseEdges :: String -> [Node]
 parseEdges edges = mapMaybe parseEdge (splitBy ',' edges)
 
-parseEdge :: String -> Maybe Edge
-parseEdge edge = 
-    case words edge of
-        [node, weight]  -> Just (read node, read weight)
-        _               -> Nothing
+parseEdge :: String -> Maybe Node
+parseEdge []    = Nothing
+parseEdge edge  = Just (read edge)
 
 splitBy :: Char -> String -> [String]
-splitBy _ [] = []
 splitBy delim str =
     let (s1, s2) = break (== delim) str
     in s1 : case s2 of
         []          -> []
         (delim:xs)  -> splitBy delim xs
-
-splitBy2 :: Char -> String -> [String]
-splitBy2 delim = foldr f [[]]
-  where
-    f c acc@(x:xs)
-      | c == delim = [] : acc
-      | otherwise  = (c : x) : xs
 
 loadGraph :: FilePath -> IO Graph
 loadGraph path = do
