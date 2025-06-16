@@ -20,6 +20,18 @@ def gen_k_components(n, k):
             v = random.choice(component_nodes[:i])
             edges.append((u, v))
 
+        extra_edges_count = max(1, (size*size) // 3)
+        existing_edges = set((min(u,v), max(u,v)) for u,v in edges)
+        added = 0
+
+        while added < extra_edges_count:
+            u, v = random.sample(component_nodes, 2)
+            edge = (min(u,v), max(u,v))
+            if edge not in existing_edges:
+                edges.append((u, v))
+                existing_edges.add(edge)
+                added += 1
+
     adj = {}
     for u, v in edges:
         adj.setdefault(u, []).append(v)
@@ -32,5 +44,5 @@ def save_to_file(adj_list, filename):
             neighbors = ','.join(str(nei) for nei in sorted(adj_list[node]))
             f.write(f"{node}: {neighbors}\n")
 
-graph = gen_k_components(2000, 3)
-save_to_file(graph, "graphs/medium.txt")
+graph = gen_k_components(100, 3)
+save_to_file(graph, "graphs/small.txt")

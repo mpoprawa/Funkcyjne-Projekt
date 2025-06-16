@@ -8,6 +8,11 @@ import qualified Data.IntMap as IntMap
 type Node = Int
 type Graph = IntMap.IntMap [Node]
 
+newtype RawString = RawString String
+
+instance Show RawString where
+    show (RawString s) = s
+
 parseLine :: String -> Maybe (Node, [Node])
 parseLine line =
     case break (== ':') line of
@@ -144,9 +149,31 @@ avgClustCoeff graph =
         count = fromIntegral (length coeffs)
     in if count == 0 then 0 else sum coeffs / count
 
+printGraphDistances :: Graph -> RawString
+printGraphDistances graph = 
+    RawString (unlines (map format (graphDistances graph)))
+    where
+        format ((from, to), maybeDist) =
+            show from ++ " to " ++ show to ++ ": " ++
+            case maybeDist of
+                Just n  -> show n
+                Nothing -> "unreachable"
+
+run :: Show a => (Graph -> a) -> IO ()
+run function = do
+    graph <- loadGraph "graphs/small.txt"
+    print (function graph)
+
 main :: IO ()
 main = do
-    graph <- loadGraph "graphs/components.txt"
+    graph <- loadGraph "graphs/small.txt"
     --print graph
     print (connectedComponents graph)
     print (maxDiameter graph)
+    print (minDegree graph)
+    print (maxDegree graph)
+    print (avgDegree graph)
+    mapM_ print (graphDistances graph)
+    print (avgDistance graph)
+    mapM_ print (clasterizationCoefficients graph)
+    print (avgClustCoeff graph)
