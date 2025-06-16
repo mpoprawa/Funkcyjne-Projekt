@@ -4,9 +4,11 @@ import Data.List
 import Data.Maybe
 import qualified Data.IntSet as IntSet
 import qualified Data.IntMap as IntMap
+import qualified Data.Vector as V
 
 type Node = Int
-type Graph = IntMap.IntMap [Node]
+--type Graph = IntMap.IntMap [Node]
+type Graph = V.Vector [Node]
 
 newtype RawString = RawString String
 
@@ -36,18 +38,28 @@ splitBy delim str =
         []          -> []
         (delim:xs)  -> splitBy delim xs
 
+collectEdges :: [(Node, [Node])] -> IntMap.IntMap [Node]
+collectEdges = IntMap.fromListWith (++)
+
 loadGraph :: FilePath -> IO Graph
 loadGraph path = do
     file <- readFile path
     let fileLines = lines file
         parsed = mapMaybe parseLine fileLines
-    return (IntMap.fromList parsed)
+        maxNode = if null parsed then 0 else maximum (map fst parsed)
+        edgesByNode = collectEdges parsed
+        lookupNeighbors i = IntMap.findWithDefault [] i edgesByNode
+        graphVec = V.generate (maxNode + 1) lookupNeighbors
+    return graphVec
+    --return (IntMap.fromList parsed)
 
 getNeighbors :: Graph -> Node -> [Node]
-getNeighbors graph node = IntMap.findWithDefault [] node graph
+getNeighbors graph node = graph V.! node
+--getNeighbors graph node = IntMap.findWithDefault [] node graph
 
 connectedComponents :: Graph -> [[Node]]
-connectedComponents graph = findComponents (IntMap.keys graph) IntSet.empty []
+--connectedComponents graph = findComponents (IntMap.keys graph) IntSet.empty []
+connectedComponents graph = findComponents [0 .. V.length graph - 1] IntSet.empty []
     where
         findComponents  [] _ components = components
         findComponents  (n:rest) visited components
@@ -90,31 +102,50 @@ maxDiameter graph =
     in maximum (map (componentDiameter graph) comps)
 
 degrees :: Graph -> [(Node, Int)]
-degrees graph = [(node, length (getNeighbors graph node)) | node <- IntMap.keys graph]
+degrees graph = [(node, length (getNeighbors graph node)) | node <- [0 .. V.length graph - 1]]
+--degrees graph = [(node, length (getNeighbors graph node)) | node <- IntMap.keys graph]
+
+--minDistances :: Graph -> Node -> [(Node, Maybe Int)]
+--minDistances graph node =
+--    let bfsDistances [] _ acc = acc
+--        bfsDistances ((n, d):queue) visited acc
+--            | IntSet.member n visited = bfsDistances queue visited acc
+--            | otherwise =
+--                let visited' = IntSet.insert n visited
+--                    neighbors = getNeighbors graph n
+--                    newQueue = queue ++ [(nei, d + 1) | nei <- neighbors, not (IntSet.member nei visited')]
+--                    acc' = IntMap.insert n d acc
+--                in bfsDistances newQueue visited' acc'
+--        distancesMap = bfsDistances [(node, 0)] IntSet.empty IntMap.empty
+--        allNodes = IntMap.keys graph
+--    in [(n, IntMap.lookup n distancesMap) | n <- allNodes]
 
 minDistances :: Graph -> Node -> [(Node, Maybe Int)]
 minDistances graph node =
-    let bfsDistances [] _ acc = acc
-        bfsDistances ((n, d):queue) visited acc
-            | IntSet.member n visited = bfsDistances queue visited acc
+    let n = V.length graph
+        bfsDistances [] _ acc = acc
+        bfsDistances ((v, d):queue) visited acc
+            | IntSet.member v visited = bfsDistances queue visited acc
             | otherwise =
-                let visited' = IntSet.insert n visited
-                    neighbors = getNeighbors graph n
+                let visited' = IntSet.insert v visited
+                    neighbors = getNeighbors graph v
                     newQueue = queue ++ [(nei, d + 1) | nei <- neighbors, not (IntSet.member nei visited')]
-                    acc' = IntMap.insert n d acc
+                    acc' = acc V.// [(v, Just d)]
                 in bfsDistances newQueue visited' acc'
-        distancesMap = bfsDistances [(node, 0)] IntSet.empty IntMap.empty
-        allNodes = IntMap.keys graph
-    in [(n, IntMap.lookup n distancesMap) | n <- allNodes]
+        distancesMap = bfsDistances [(node, 0)] IntSet.empty (V.replicate n Nothing)
+    in [(i, distancesMap V.! i) | i <- [0 .. n - 1]]
 
 graphDistances :: Graph -> [((Node, Node), Maybe Int)]
 graphDistances graph =
-    let nodes = IntMap.keys graph
+    --let nodes = IntMap.keys graph
+    let nodes = [0 .. V.length graph - 1]
     in [((n1, n2), d) | n1 <- nodes, let distances = minDistances graph n1, (n2, d) <- distances]
 
-clasterizationCoefficients :: Graph -> IntMap.IntMap [Double]
+--clasterizationCoefficients :: Graph -> IntMap.IntMap [Double]
+clasterizationCoefficients :: Graph -> V.Vector [Double]
 clasterizationCoefficients graph =
-    IntMap.mapWithKey clustCoeff graph
+    V.imap clustCoeff graph
+    --IntMap.mapWithKey clustCoeff graph
     where
         clustCoeff node neighbors
             | length neighbors < 2 = [0.0]
@@ -145,7 +176,8 @@ avgDistance graph =
 
 avgClustCoeff :: Graph -> Double
 avgClustCoeff graph =
-    let coeffs = concat (IntMap.elems (clasterizationCoefficients graph))
+    let coeffs = concat (V.toList (clasterizationCoefficients graph))
+    --let coeffs = concat (IntMap.elems (clasterizationCoefficients graph))
         count = fromIntegral (length coeffs)
     in if count == 0 then 0 else sum coeffs / count
 
@@ -161,7 +193,7 @@ printGraphDistances graph =
 
 run :: Show a => (Graph -> a) -> IO ()
 run function = do
-    graph <- loadGraph "graphs/small.txt"
+    graph <- loadGraph "graphs/example.txt"
     print (function graph)
 
 main :: IO ()
