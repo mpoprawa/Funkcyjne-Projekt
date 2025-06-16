@@ -20,7 +20,7 @@ def gen_k_components(n, k):
             v = random.choice(component_nodes[:i])
             edges.append((u, v))
 
-        extra_edges_count = max(1, (size*size) // 3)
+        extra_edges_count = max(1, (size*size) // 30)
         existing_edges = set((min(u,v), max(u,v)) for u,v in edges)
         added = 0
 
