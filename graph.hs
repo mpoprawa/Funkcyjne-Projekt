@@ -5,6 +5,8 @@ import Data.Maybe
 import qualified Data.IntSet as IntSet
 import qualified Data.IntMap as IntMap
 import qualified Data.Vector as V
+import qualified Data.Sequence as Seq
+import Data.Sequence (Seq (..))
 
 type Node = Int
 --type Graph = IntMap.IntMap [Node]
@@ -123,16 +125,20 @@ degrees graph = [(node, length (getNeighbors graph node)) | node <- [0 .. V.leng
 minDistances :: Graph -> Node -> [(Node, Maybe Int)]
 minDistances graph node =
     let n = V.length graph
-        bfsDistances [] _ acc = acc
-        bfsDistances ((v, d):queue) visited acc
+        bfsDistances Seq.Empty visited acc = acc
+        --bfsDistances [] _ acc = acc
+        --bfsDistances ((v, d):queue) visited acc
+        bfsDistances ((v, d) :<| queue) visited acc
             | IntSet.member v visited = bfsDistances queue visited acc
             | otherwise =
                 let visited' = IntSet.insert v visited
                     neighbors = getNeighbors graph v
-                    newQueue = queue ++ [(nei, d + 1) | nei <- neighbors, not (IntSet.member nei visited')]
+                    newQueue = queue Seq.>< Seq.fromList [(nei, d + 1) | nei <- neighbors, not (IntSet.member nei visited')]
+                    --newQueue = queue ++ [(nei, d + 1) | nei <- neighbors, not (IntSet.member nei visited')]
                     acc' = acc V.// [(v, Just d)]
                 in bfsDistances newQueue visited' acc'
-        distancesMap = bfsDistances [(node, 0)] IntSet.empty (V.replicate n Nothing)
+        --distancesMap = bfsDistances [(node, 0)] IntSet.empty (V.replicate n Nothing)
+        distancesMap = bfsDistances (Seq.singleton (node, 0)) IntSet.empty (V.replicate n Nothing)
     in [(i, distancesMap V.! i) | i <- [0 .. n - 1]]
 
 graphDistances :: Graph -> [((Node, Node), Maybe Int)]
@@ -193,7 +199,7 @@ printGraphDistances graph =
 
 run :: Show a => (Graph -> a) -> IO ()
 run function = do
-    graph <- loadGraph "graphs/example.txt"
+    graph <- loadGraph "graphs/large.txt"
     print (function graph)
 
 main :: IO ()
