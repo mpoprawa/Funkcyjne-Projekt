@@ -107,6 +107,19 @@ graphDistances graph =
     let nodes = IntMap.keys graph
     in [((n1, n2), d) | n1 <- nodes, let distances = minDistances graph n1, (n2, d) <- distances]
 
+clasterizationCoefficients :: Graph -> IntMap.IntMap [Float]
+clasterizationCoefficients graph =
+    IntMap.mapWithKey clustCoeff graph
+    where
+        clustCoeff node neighbors
+            | length neighbors < 2 = [0.0]
+            | otherwise =
+                let neighborPairs = [(x, y) | (x:ys) <- tails neighbors, y <- ys]
+                    links = [1 | (x, y) <- neighborPairs, y `elem` getNeighbors graph x]
+                    k = length neighbors
+                    coeff = (fromIntegral (sum links)) / (fromIntegral (k * (k - 1)) / 2)
+                in [coeff]
+
 main :: IO ()
 main = do
     graph <- loadGraph "graphs/components.txt"
