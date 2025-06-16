@@ -105,7 +105,7 @@ minDistances graph node =
 graphDistances :: Graph -> [((Node, Node), Maybe Int)]
 graphDistances graph =
     let nodes = IntMap.keys graph
-    in [((n1, n2), IntMap.lookup n2 distMap) | n1 <- nodes, let distMap = IntMap.fromList (mapMaybe (\(x, d) -> fmap (\dd -> (x, dd)) d) (minDistances graph n1)), n2 <- nodes]
+    in [((n1, n2), d) | n1 <- nodes, let distances = minDistances graph n1, (n2, d) <- distances]
 
 main :: IO ()
 main = do
