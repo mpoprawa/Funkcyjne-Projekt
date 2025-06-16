@@ -107,7 +107,7 @@ graphDistances graph =
     let nodes = IntMap.keys graph
     in [((n1, n2), d) | n1 <- nodes, let distances = minDistances graph n1, (n2, d) <- distances]
 
-clasterizationCoefficients :: Graph -> IntMap.IntMap [Float]
+clasterizationCoefficients :: Graph -> IntMap.IntMap [Double]
 clasterizationCoefficients graph =
     IntMap.mapWithKey clustCoeff graph
     where
@@ -119,6 +119,30 @@ clasterizationCoefficients graph =
                     k = length neighbors
                     coeff = (fromIntegral (sum links)) / (fromIntegral (k * (k - 1)) / 2)
                 in [coeff]
+
+maxDegree :: Graph -> Int
+maxDegree graph = maximum (map snd (degrees graph))
+
+minDegree :: Graph -> Int
+minDegree graph = minimum (map snd (degrees graph))
+
+avgDegree :: Graph -> Double
+avgDegree graph =
+    let degs = map snd (degrees graph)
+        count = fromIntegral (length degs)
+    in if count == 0 then 0 else fromIntegral (sum degs) / count
+
+avgDistance :: Graph -> Double
+avgDistance graph =
+    let dists = [fromIntegral d | ((n1, n2), Just d) <- graphDistances graph, n1 /= n2]
+        count = fromIntegral (length dists)
+    in if count == 0 then 0 else sum dists / count
+
+avgClustCoeff :: Graph -> Double
+avgClustCoeff graph =
+    let coeffs = concat (IntMap.elems (clasterizationCoefficients graph))
+        count = fromIntegral (length coeffs)
+    in if count == 0 then 0 else sum coeffs / count
 
 main :: IO ()
 main = do

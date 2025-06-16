@@ -32,5 +32,5 @@ def save_to_file(adj_list, filename):
             neighbors = ','.join(str(nei) for nei in sorted(adj_list[node]))
             f.write(f"{node}: {neighbors}\n")
 
-graph = gen_k_components(10000, 3)
-save_to_file(graph, "graphs/large.txt")
+graph = gen_k_components(2000, 3)
+save_to_file(graph, "graphs/medium.txt")
