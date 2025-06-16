@@ -87,7 +87,30 @@ maxDiameter graph =
 degrees :: Graph -> [(Node, Int)]
 degrees graph = [(node, length (getNeighbors graph node)) | node <- IntMap.keys graph]
 
+minDistance :: Graph -> Node -> Node -> Maybe Int
+minDistance graph start end = dijkstra (IntMap.singleton start 0) IntSet.empty [(start, 0)]
+    where
+        dijkstra distMap visited [] = IntMap.lookup end distMap
+        dijkstra distMap visited ((n, d):queue)
+                | n == end = Just d
+                | IntSet.member n visited = dijkstra distMap visited queue
+                | otherwise =
+                        let visited' = IntSet.insert n visited
+                            neighbors = getNeighbors graph n
+                            update (q, dm) nei =
+                                    let alt = d + 1
+                                        old = IntMap.findWithDefault maxBound nei dm
+                                    in if alt < old
+                                        then ((nei, alt):q, IntMap.insert nei alt dm)
+                                        else (q, dm)
+                            (queue', distMap') = foldl update (queue, distMap) [nei | nei <- neighbors, not (IntSet.member nei visited')]
+                        in dijkstra distMap' visited' queue'
 
+graphDistances :: Graph -> [((Node, Node), Maybe Int)]
+graphDistances graph =
+    let nodes = IntMap.keys graph
+        pairs = [(u, v) | u <- nodes, v <- nodes, u < v]
+    in [((u, v), minDistance graph u v) | (u, v) <- pairs]
 
 main :: IO ()
 main = do
