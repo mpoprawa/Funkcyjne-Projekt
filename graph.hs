@@ -82,15 +82,19 @@ dfs graph start visited = runDfs [start] visited []
                 in runDfs (neighbors ++ rest) vis' (acc ++ [n])
 
 bfs :: Graph -> Node -> Int
+--bfs graph start = runBfs (Seq.singleton (start, 0)) IntSet.empty 0
 bfs graph start = runBfs [(start, 0)] IntSet.empty 0
     where
-        runBfs [] _ maxDist = maxDist
-        runBfs ((n, d):queue) visited maxDist
+        --runBfs [] _ maxDist = maxDist
+        runBfs Seq.Empty _ maxDist = maxDist
+        --runBfs ((n, d):queue) visited maxDist
+        runBfs ((n, d) Seq.:<| queue) visited maxDist
             | IntSet.member n visited = runBfs queue visited maxDist
             | otherwise =
                 let visited' = IntSet.insert n visited
                     neighbors = getNeighbors graph n
-                    newQueue = queue ++ [(nei, d + 1) | nei <- neighbors, not (IntSet.member nei visited')]
+                    newQueue = queue Seq.>< Seq.fromList [(nei, d + 1) | nei <- neighbors, not (IntSet.member nei visited')]
+                    --newQueue = queue ++ [(nei, d + 1) | nei <- neighbors, not (IntSet.member nei visited')]
                     maxDist' = max maxDist d
                 in runBfs newQueue visited' maxDist'
 
@@ -199,7 +203,7 @@ printGraphDistances graph =
 
 run :: Show a => (Graph -> a) -> IO ()
 run function = do
-    graph <- loadGraph "graphs/large.txt"
+    graph <- loadGraph "graphs/medium.txt"
     print (function graph)
 
 main :: IO ()
