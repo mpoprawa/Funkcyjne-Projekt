@@ -84,6 +84,11 @@ maxDiameter graph =
     let comps = connectedComponents graph
     in maximum (map (componentDiameter graph) comps)
 
+degrees :: Graph -> [(Node, Int)]
+degrees graph = [(node, length (getNeighbors graph node)) | node <- IntMap.keys graph]
+
+
+
 main :: IO ()
 main = do
     graph <- loadGraph "graphs/components.txt"
